@@ -279,19 +279,24 @@ api.post('/api/movies', function (req, res) {
   try {
     var movies = loadMovies();
     var newMovie = req.body;
-    
+
+    // Coerce fileIndex to a number if it comes as a string
+    if (newMovie && typeof newMovie.fileIndex !== 'undefined') {
+      newMovie.fileIndex = Number(newMovie.fileIndex);
+    }
+
     // Validate required fields
-    if (!newMovie.id || !newMovie.name || !newMovie.torrentFile || typeof newMovie.fileIndex !== 'number') {
-      return res.status(400).json({ 
-        error: 'Missing required fields: id, name, torrentFile, fileIndex' 
+    if (!newMovie.id || !newMovie.name || !newMovie.torrentFile || !Number.isInteger(newMovie.fileIndex)) {
+      return res.status(400).json({
+        error: 'Missing or invalid fields: id, name, torrentFile, fileIndex'
       });
     }
-    
+
     // Check if movie with same ID already exists
     if (movies.find(function(m) { return m.id === newMovie.id; })) {
       return res.status(409).json({ error: 'Movie with this ID already exists' });
     }
-    
+
     movies.push(newMovie);
     saveMovies(movies);
     res.status(201).json(newMovie);
@@ -306,21 +311,26 @@ api.put('/api/movies/:id', function (req, res) {
   try {
     var movies = loadMovies();
     var movieIndex = movies.findIndex(function(m) { return m.id === req.params.id; });
-    
+
     if (movieIndex === -1) {
       return res.status(404).json({ error: 'Movie not found' });
     }
-    
+
     var updatedMovie = req.body;
     updatedMovie.id = req.params.id; // Ensure ID stays the same
-    
+
+    // Coerce fileIndex to a number if it comes as a string
+    if (updatedMovie && typeof updatedMovie.fileIndex !== 'undefined') {
+      updatedMovie.fileIndex = Number(updatedMovie.fileIndex);
+    }
+
     // Validate required fields
-    if (!updatedMovie.name || !updatedMovie.torrentFile || typeof updatedMovie.fileIndex !== 'number') {
-      return res.status(400).json({ 
-        error: 'Missing required fields: name, torrentFile, fileIndex' 
+    if (!updatedMovie.name || !updatedMovie.torrentFile || !Number.isInteger(updatedMovie.fileIndex)) {
+      return res.status(400).json({
+        error: 'Missing or invalid fields: name, torrentFile, fileIndex'
       });
     }
-    
+
     movies[movieIndex] = updatedMovie;
     saveMovies(movies);
     res.json(updatedMovie);
@@ -335,11 +345,11 @@ api.delete('/api/movies/:id', function (req, res) {
   try {
     var movies = loadMovies();
     var movieIndex = movies.findIndex(function(m) { return m.id === req.params.id; });
-    
+
     if (movieIndex === -1) {
       return res.status(404).json({ error: 'Movie not found' });
     }
-    
+
     movies.splice(movieIndex, 1);
     saveMovies(movies);
     res.status(204).send();
@@ -355,17 +365,17 @@ api.get('/m3u8', function (req, res) {
     var movies = loadMovies();
     var proto = req.get('x-forwarded-proto') || req.protocol;
     var host = req.get('x-forwarded-host') || req.get('host');
-    
+
     res.setHeader('Content-Type', 'application/x-mpegurl; charset=utf-8');
     res.attachment('movies.m3u');
-    
+
     var m3uContent = '#EXTM3U\n';
     movies.forEach(function(movie) {
       var tvgLogo = movie.image ? ' tvg-logo="' + movie.image + '"' : '';
       m3uContent += '#EXTINF:-1' + tvgLogo + ',' + movie.name + '\n';
       m3uContent += proto + '://' + host + '/stream/' + movie.id + '\n';
     });
-    
+
     res.send(m3uContent);
   } catch (err) {
     console.error('Error generating M3U playlist:', err);
@@ -380,19 +390,19 @@ api.get('/stream/:id', function (req, res) {
     if (!movie) {
       return res.status(404).json({ error: 'Movie not found' });
     }
-    
+
     // Add the torrent to the store
     store.add(movie.torrentFile, function (err, infoHash) {
       if (err) {
         console.error('Error adding torrent:', err);
         return res.status(500).json({ error: 'Failed to load torrent' });
       }
-      
+
       var torrent = store.get(infoHash);
       if (!torrent) {
         return res.status(500).json({ error: 'Torrent not available' });
       }
-      
+
       // Wait for torrent to be ready
       if (!torrent.ready) {
         torrent.on('ready', function() {
@@ -401,36 +411,16 @@ api.get('/stream/:id', function (req, res) {
       } else {
         streamFile();
       }
-      
+
       function streamFile() {
         var file = torrent.files[movie.fileIndex];
         if (!file) {
           return res.status(404).json({ error: 'File not found in torrent' });
         }
-        
-        // Handle range requests
-        var range = req.headers.range;
-        range = range && rangeParser(file.length, range)[0];
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.type(file.name);
-        req.connection.setTimeout(3600000);
-        
-        if (!range) {
-          res.setHeader('Content-Length', file.length);
-          if (req.method === 'HEAD') {
-            return res.end();
-          }
-          return pump(file.createReadStream(), res);
-        }
-        
-        res.statusCode = 206;
-        res.setHeader('Content-Length', range.end - range.start + 1);
-        res.setHeader('Content-Range', 'bytes ' + range.start + '-' + range.end + '/' + file.length);
-        
-        if (req.method === 'HEAD') {
-          return res.end();
-        }
-        pump(file.createReadStream(range), res);
+
+        // Build canonical file URL and redirect the client
+        var canonicalUrl = '/torrents/' + infoHash + '/files/' + encodeURIComponent(file.path);
+        return res.redirect(302, canonicalUrl);
       }
     });
   } catch (err) {
