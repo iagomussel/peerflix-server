@@ -66,6 +66,14 @@ angular.module('peerflixServerApp')
         return;
       }
 
+      // Ensure fileIndex is a number
+      $scope.currentMovie.fileIndex = Number($scope.currentMovie.fileIndex);
+
+      if (!Number.isInteger($scope.currentMovie.fileIndex) || $scope.currentMovie.fileIndex < 0) {
+        $scope.error = 'File Index must be a non-negative integer';
+        return;
+      }
+
       $scope.loading = true;
       $scope.error = null;
 

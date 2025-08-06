@@ -86,6 +86,12 @@
             <span class="fa {{ torrent.stats.paused ? 'fa-play' : 'fa-pause' }}"></span>
           </button>
         </li>
+        <!-- Play button to open the primary video file directly -->
+        <li class="text-nowrap" ng-if="torrent.files && torrent.files.length">
+          <a class="btn btn-xs btn-success" ng-href="{{ torrent.files[0].link }}" target="_blank" title="Play first file">
+            <span class="fa fa-play"></span>
+          </a>
+        </li>
         <li class="text-nowrap" ng-show="torrent.stats">
           <strong>Speed:</strong>
           <span class="label label-success">{{ torrent.stats.speed.down / 1024 | number:1 }}</span> /
