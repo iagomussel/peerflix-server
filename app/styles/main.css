@@ -37,8 +37,8 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 .jumbotron p {
-  margin: 15px 0 -30px;
-  font-size: 12px;
+  margin: 15px 0 25px;
+  font-size: 16px;
   font-weight: normal;
 }
 .jumbotron .btn-link {
@@ -50,9 +50,10 @@ body {
   margin: 40px 0;
 }
 .content .panel-heading {
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow-x: hidden;
+  /* Allow long titles to wrap nicely instead of being cut off */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .progress .progress-bar {
