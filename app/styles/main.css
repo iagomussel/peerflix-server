@@ -104,3 +104,62 @@ body {
     padding: 14px 24px;
   }
 }
+
+/* Custom styles for Movies interface */
+.movie-info p {
+  margin-bottom: 8px;
+}
+
+.movie-info code {
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.panel-footer .btn-group-justified .btn {
+  border-radius: 0;
+}
+
+.panel-footer .btn-group-justified .btn:first-child {
+  border-bottom-left-radius: 4px;
+}
+
+.panel-footer .btn-group-justified .btn:last-child {
+  border-bottom-right-radius: 4px;
+}
+
+.alert-dismissible {
+  margin-bottom: 20px;
+}
+
+/* Movie form styles */
+.panel .form-group {
+  margin-bottom: 15px;
+}
+
+.panel .help-block {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #737373;
+}
+
+/* Movie cards equal height */
+.row.content .col-md-6,
+.row.content .col-lg-4 {
+  margin-bottom: 20px;
+}
+
+.row.content .panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.row.content .panel-body {
+  flex: 1;
+}
+
+/* Loading spinner */
+.fa-spinner {
+  color: #337ab7;
+}
